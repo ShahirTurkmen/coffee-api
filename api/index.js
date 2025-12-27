@@ -26,7 +26,7 @@ async function initSupabase() {
   }
   try {
     supabase = createClient(url, key);
-    await new Promise((resolve) => setTimeout(resolve, 3000)); // wait a bit for supabase to be ready
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // wait a bit for supabase to be ready
     // quick test to ensure credentials work
     const { data: test, error: testErr } = await supabase
       .from("coffees")
@@ -77,6 +77,9 @@ app.use(express.json());
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
 app.get("/coffees", async (req, res) => {
+  if (supabaseReady === null && supabase === null) {
+    await initSupabase();
+  }
   if (supabaseReady && supabase) {
     try {
       const { data, error } = await supabase
@@ -98,6 +101,9 @@ app.get("/coffees", async (req, res) => {
 
 app.get("/coffee/:id", async (req, res) => {
   const param = req.params.id;
+  if (supabaseReady === null && supabase === null) {
+    await initSupabase();
+  }
   if (supabaseReady && supabase) {
     try {
       // try numeric id first
@@ -142,6 +148,9 @@ app.get("/coffee/:id", async (req, res) => {
 // Find by name (case-insensitive exact match)
 app.get("/coffee/name/:name", async (req, res) => {
   const nameParam = decodeURIComponent(req.params.name);
+  if (supabaseReady === null && supabase === null) {
+    await initSupabase();
+  }
   if (supabaseReady && supabase) {
     try {
       const { data, error } = await supabase
@@ -171,6 +180,9 @@ app.get("/coffee/name/:name", async (req, res) => {
 // Search by description substring (case-insensitive)
 app.get("/coffee/desc/:desc", async (req, res) => {
   const descParam = decodeURIComponent(req.params.desc);
+  if (supabaseReady === null && supabase === null) {
+    await initSupabase();
+  }
   if (supabaseReady && supabase) {
     try {
       const { data, error } = await supabase
@@ -206,10 +218,10 @@ app.patch("/coffee/:id", async (req, res) => {
   if (!provided || provided !== API_SECRET)
     return res.status(401).json({ error: "Unauthorized" });
   const param = req.params.id;
-  if (!supabaseReady || !supabase)
-    return res
-      .status(503)
-      .json({ error: "Database not configured for write operations" });
+
+  if (supabaseReady === null && supabase === null) {
+    await initSupabase();
+  }
   try {
     const n = parseInt(param, 10);
     let target = null;
@@ -268,10 +280,9 @@ app.post("/add-coffee", async (req, res) => {
   const API_SECRET = process.env.API_SECRET;
   if (!provided || provided !== API_SECRET)
     return res.status(401).json({ error: "Unauthorized" });
-  if (!supabaseReady || !supabase)
-    return res
-      .status(503)
-      .json({ error: "Database not configured for write operations" });
+  if (supabaseReady === null && supabase === null) {
+    await initSupabase();
+  }
   const { name, image, description } = req.body;
   if (!name) return res.status(400).json({ error: "Missing 'name'" });
   try {
