@@ -302,7 +302,7 @@ app.post("/add-coffee", async (req, res) => {
     res.status(201).json(data);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to save new coffee" });
+    res.status(500).json({ error: "Failed to save new coffee", err });
   }
 });
 
