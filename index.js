@@ -5,7 +5,7 @@ const path = require("path");
 const fs = require("fs").promises;
 
 app.use(express.json());
-app.get("/", (req, res) => res.send("Express on Vercel"));
+app.get("/", (req, res) => res.send("Express on Render"));
 
 app.get("/coffees", (req, res) => {
   res.json(coffees);
@@ -91,5 +91,3 @@ app.post("/add-coffee", async (req, res) => {
 
 app.use("/images", express.static(path.join(__dirname, "images")));
 app.listen(3000, () => console.log("Server ready on port 3000"));
-
-module.exports = app;
