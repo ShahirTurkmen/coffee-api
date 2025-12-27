@@ -76,7 +76,7 @@ app.use(express.json());
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
 app.get("/coffees", async (req, res) => {
-  if (supabaseReady === null && supabase === null) {
+  if (!supabaseReady && supabase === null) {
     await initSupabase();
   }
   if (supabaseReady && supabase) {
@@ -100,7 +100,7 @@ app.get("/coffees", async (req, res) => {
 
 app.get("/coffee/:id", async (req, res) => {
   const param = req.params.id;
-  if (supabaseReady === null && supabase === null) {
+  if (!supabaseReady && supabase === null) {
     await initSupabase();
   }
   if (supabaseReady && supabase) {
@@ -147,7 +147,7 @@ app.get("/coffee/:id", async (req, res) => {
 // Find by name (case-insensitive exact match)
 app.get("/coffee/name/:name", async (req, res) => {
   const nameParam = decodeURIComponent(req.params.name);
-  if (supabaseReady === null && supabase === null) {
+  if (!supabaseReady && supabase === null) {
     await initSupabase();
   }
   if (supabaseReady && supabase) {
@@ -179,7 +179,7 @@ app.get("/coffee/name/:name", async (req, res) => {
 // Search by description substring (case-insensitive)
 app.get("/coffee/desc/:desc", async (req, res) => {
   const descParam = decodeURIComponent(req.params.desc);
-  if (supabaseReady === null && supabase === null) {
+  if (!supabaseReady && supabase === null) {
     await initSupabase();
   }
   if (supabaseReady && supabase) {
@@ -218,7 +218,7 @@ app.patch("/coffee/:id", async (req, res) => {
     return res.status(401).json({ error: "Unauthorized" });
   const param = req.params.id;
 
-  if (supabaseReady === null && supabase === null) {
+  if (!supabaseReady && supabase === null) {
     await initSupabase();
   }
   try {
@@ -279,7 +279,7 @@ app.post("/add-coffee", async (req, res) => {
   const API_SECRET = process.env.API_SECRET;
   if (!provided || provided !== API_SECRET)
     return res.status(401).json({ error: "Unauthorized" });
-  if (supabaseReady === null && supabase === null) {
+  if (!supabaseReady && supabase === null) {
     await initSupabase();
   }
   const { name, image, description } = req.body;
