@@ -26,6 +26,7 @@ async function initSupabase() {
   }
   try {
     supabase = createClient(url, key);
+    setTimeout(() => {}, 2000);
     // quick test to ensure credentials work
     const { data: test, error: testErr } = await supabase
       .from("coffees")
