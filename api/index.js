@@ -49,6 +49,7 @@ async function initDb() {
 }
 
 initDb();
+// Middleware to parse JSON bodies
 
 app.use(express.json());
 app.get("/", (req, res) => res.send("Express on Vercel"));
