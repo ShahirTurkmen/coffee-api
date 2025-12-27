@@ -11,8 +11,6 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^17.2.3",
-    "express": "^5.2.1",
-    "netlify-cli": "^23.13.0",
-    "serverless-http": "^4.0.0"
+    "express": "^5.2.1"
   }
 }
