@@ -275,6 +275,20 @@ app.post("/add-coffee", async (req, res) => {
   const { name, image, description } = req.body;
   if (!name) return res.status(400).json({ error: "Missing 'name'" });
   try {
+    // prevent duplicates by name (case-insensitive)
+    try {
+      const { data: exists, error: existsErr } = await supabase
+        .from("coffees")
+        .select("*")
+        .ilike("name", name)
+        .limit(1)
+        .single();
+      if (exists) return res.status(409).json({ error: "Coffee already exists" });
+      if (existsErr && existsErr.code !== "PGRST116") console.error(existsErr);
+    } catch (e) {
+      // continue — duplicate check failed but we'll try insert and let DB error surface
+      console.warn("Duplicate check failed:", e && e.message ? e.message : e);
+    }
     // calculate next id if present
     const { data: maxRow, error: maxErr } = await supabase
       .from("coffees")
