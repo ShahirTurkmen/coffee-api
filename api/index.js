@@ -24,10 +24,7 @@ async function initDb() {
     return;
   }
   try {
-    await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(uri, {});
     dbReady = true;
     console.log("Connected to MongoDB");
 
@@ -66,7 +63,7 @@ app.get("/coffees", async (req, res) => {
       return res.status(500).json({ error: "DB error" });
     }
   }
-  res.json(coffees);
+  res.status(503).json({ error: "Database not configured" });
 });
 
 app.get("/coffee/:id", async (req, res) => {
@@ -89,10 +86,11 @@ app.get("/coffee/:id", async (req, res) => {
       return res.status(500).json({ error: "DB error" });
     }
   }
-  const id = parseInt(param, 10);
-  const coffee = coffees.find((c) => c.id === id);
-  if (!coffee) return res.status(404).json({ error: "Coffee not found" });
-  res.json(coffee);
+  //   const id = parseInt(param, 10);
+  //   const coffee = coffees.find((c) => c.id === id);
+  //   if (!coffee) return res.status(404).json({ error: "Coffee not found" });
+  //   res.json(coffee);
+  res.status(503).json({ error: "Database not configured" });
 });
 
 // Find by name (case-insensitive exact match)
@@ -110,10 +108,11 @@ app.get("/coffee/name/:name", async (req, res) => {
       return res.status(500).json({ error: "DB error" });
     }
   }
-  const name = nameParam.toLowerCase();
-  const coffee = coffees.find((c) => c.name.toLowerCase() === name);
-  if (!coffee) return res.status(404).json({ error: "Coffee not found" });
-  res.json(coffee);
+  res.status(503).json({ error: "Database not configured" });
+  //   const name = nameParam.toLowerCase();
+  //   const coffee = coffees.find((c) => c.name.toLowerCase() === name);
+  //   if (!coffee) return res.status(404).json({ error: "Coffee not found" });
+  //   res.json(coffee);
 });
 
 // Search by description substring (case-insensitive)
@@ -130,11 +129,12 @@ app.get("/coffee/desc/:desc", async (req, res) => {
       return res.status(500).json({ error: "DB error" });
     }
   }
-  const desc = descParam.toLowerCase();
-  const results = coffees.filter((c) =>
-    c.description.toLowerCase().includes(desc)
-  );
-  res.json(results);
+  //   const desc = descParam.toLowerCase();
+  //   const results = coffees.filter((c) =>
+  //     c.description.toLowerCase().includes(desc)
+  //   );
+  //   res.json(results);
+  res.status(503).json({ error: "Database not configured" });
 });
 
 // No file persistence for writes when using MongoDB; if DB not configured,
