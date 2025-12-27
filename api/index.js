@@ -26,7 +26,7 @@ async function initSupabase() {
   }
   try {
     supabase = createClient(url, key);
-    await new Promise((resolve) => setTimeout(resolve, 2000)); // wait a bit for supabase to be ready
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // wait a bit for supabase to be ready
     // quick test to ensure credentials work
     const { data: test, error: testErr } = await supabase
       .from("coffees")
@@ -70,7 +70,7 @@ async function initSupabase() {
   }
 }
 
-await initSupabase();
+initSupabase();
 // Middleware to parse JSON bodies
 
 app.use(express.json());
