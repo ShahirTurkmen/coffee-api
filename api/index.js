@@ -26,7 +26,7 @@ async function initSupabase() {
   }
   try {
     supabase = createClient(url, key);
-    setTimeout(() => {}, 2000);
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // wait a bit for supabase to be ready
     // quick test to ensure credentials work
     const { data: test, error: testErr } = await supabase
       .from("coffees")
@@ -283,7 +283,8 @@ app.post("/add-coffee", async (req, res) => {
         .ilike("name", name)
         .limit(1)
         .single();
-      if (exists) return res.status(409).json({ error: "Coffee already exists" });
+      if (exists)
+        return res.status(409).json({ error: "Coffee already exists" });
       if (existsErr && existsErr.code !== "PGRST116") console.error(existsErr);
     } catch (e) {
       // continue — duplicate check failed but we'll try insert and let DB error surface
