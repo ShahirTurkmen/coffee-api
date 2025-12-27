@@ -3,8 +3,7 @@ const app = express();
 const path = require("path");
 const fs = require("fs").promises;
 const fsSync = require("fs");
-const mongoose = require("mongoose");
-const Coffee = require("./models/coffee");
+const { createClient } = require("@supabase/supabase-js");
 
 let coffees = [];
 try {
@@ -13,51 +12,81 @@ try {
   coffees = [];
 }
 
-let dbReady = false;
+let supabase = null;
+let supabaseReady = false;
 
-async function initDb() {
-  const uri = process.env.MONGO_URI;
-  if (!uri) {
+async function initSupabase() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_KEY;
+  if (!url || !key) {
     console.warn(
-      "MONGO_URI not set — using local coffees.json for reads only."
+      "SUPABASE_URL or SUPABASE_KEY not set — using local coffees.json for reads only."
     );
     return;
   }
   try {
-    await mongoose.connect(uri, {});
-    dbReady = true;
-    console.log("Connected to MongoDB");
+    supabase = createClient(url, key);
+    // quick test to ensure credentials work
+    const { data: test, error: testErr } = await supabase
+      .from("coffees")
+      .select("id")
+      .limit(1);
+    if (testErr && testErr.code === "42P01") {
+      // table doesn't exist
+      console.warn(
+        "Supabase 'coffees' table not found — reads will still fall back to coffees.json until table is created."
+      );
+    }
+    supabaseReady = true;
+    console.log("Supabase client initialized");
 
-    const count = await Coffee.estimatedDocumentCount();
-    if (count === 0 && Array.isArray(coffees) && coffees.length > 0) {
-      const docs = coffees.map((c) => ({
-        name: c.name,
-        image: c.image,
-        description: c.description,
-        legacyId: c.id,
-      }));
-      await Coffee.insertMany(docs);
-      console.log("Seeded coffees collection from coffees.json");
+    // seed if empty and local coffees available
+    try {
+      const { data: existing } = await supabase
+        .from("coffees")
+        .select("id")
+        .limit(1);
+      if (
+        (!existing || existing.length === 0) &&
+        Array.isArray(coffees) &&
+        coffees.length > 0
+      ) {
+        const docs = coffees.map((c) => ({
+          name: c.name,
+          image: c.image,
+          description: c.description,
+          id: c.id,
+        }));
+        await supabase.from("coffees").insert(docs);
+        console.log("Seeded supabase 'coffees' table from coffees.json");
+      }
+    } catch (err) {
+      console.warn("Supabase seed check/insert failed:", err.message || err);
     }
   } catch (err) {
-    console.error("Failed to connect to MongoDB:", err);
-    dbReady = false;
+    console.error("Failed to initialize Supabase:", err);
+    supabaseReady = false;
   }
 }
 
-initDb();
+initSupabase();
 // Middleware to parse JSON bodies
 
 app.use(express.json());
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
 app.get("/coffees", async (req, res) => {
-  if (dbReady) {
+  if (supabaseReady && supabase) {
     try {
-      const list = await Coffee.find()
-        .sort({ legacyId: 1, createdAt: 1 })
-        .lean();
-      return res.json(list);
+      const { data, error } = await supabase
+        .from("coffees")
+        .select("*")
+        .order("id", { ascending: true });
+      if (error) {
+        console.error(error);
+        return res.status(500).json({ error: "DB error" });
+      }
+      return res.json(data);
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: "DB error" });
@@ -68,19 +97,35 @@ app.get("/coffees", async (req, res) => {
 
 app.get("/coffee/:id", async (req, res) => {
   const param = req.params.id;
-  // If DB ready, try to find by Mongo _id first, then legacyId
-  if (dbReady) {
+  if (supabaseReady && supabase) {
     try {
-      let coffee = null;
-      if (/^[0-9a-fA-F]{24}$/.test(param)) {
-        coffee = await Coffee.findById(param).lean();
+      // try numeric id first
+      const n = parseInt(param, 10);
+      if (!isNaN(n)) {
+        const { data, error } = await supabase
+          .from("coffees")
+          .select("*")
+          .eq("id", n)
+          .limit(1)
+          .single();
+        if (error && error.code !== "PGRST116") {
+          // PGRST116: No rows found for single()
+          console.error(error);
+        }
+        if (data) return res.json(data);
       }
-      if (!coffee) {
-        const n = parseInt(param, 10);
-        if (!isNaN(n)) coffee = await Coffee.findOne({ legacyId: n }).lean();
-      }
-      if (!coffee) return res.status(404).json({ error: "Coffee not found" });
-      return res.json(coffee);
+
+      // try by primary key id (uuid or serial)
+      const { data: byId, error: byIdErr } = await supabase
+        .from("coffees")
+        .select("*")
+        .eq("id", param)
+        .limit(1)
+        .single();
+      if (byIdErr && byIdErr.code !== "PGRST116") console.error(byIdErr);
+      if (byId) return res.json(byId);
+
+      return res.status(404).json({ error: "Coffee not found" });
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: "DB error" });
@@ -96,13 +141,20 @@ app.get("/coffee/:id", async (req, res) => {
 // Find by name (case-insensitive exact match)
 app.get("/coffee/name/:name", async (req, res) => {
   const nameParam = decodeURIComponent(req.params.name);
-  if (dbReady) {
+  if (supabaseReady && supabase) {
     try {
-      const coffee = await Coffee.findOne({
-        name: { $regex: `^${nameParam}$`, $options: "i" },
-      }).lean();
-      if (!coffee) return res.status(404).json({ error: "Coffee not found" });
-      return res.json(coffee);
+      const { data, error } = await supabase
+        .from("coffees")
+        .select("*")
+        .ilike("name", nameParam)
+        .limit(1)
+        .single();
+      if (error && error.code !== "PGRST116") {
+        console.error(error);
+        return res.status(500).json({ error: "DB error" });
+      }
+      if (!data) return res.status(404).json({ error: "Coffee not found" });
+      return res.json(data);
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: "DB error" });
@@ -118,12 +170,17 @@ app.get("/coffee/name/:name", async (req, res) => {
 // Search by description substring (case-insensitive)
 app.get("/coffee/desc/:desc", async (req, res) => {
   const descParam = decodeURIComponent(req.params.desc);
-  if (dbReady) {
+  if (supabaseReady && supabase) {
     try {
-      const results = await Coffee.find({
-        description: { $regex: descParam, $options: "i" },
-      }).lean();
-      return res.json(results);
+      const { data, error } = await supabase
+        .from("coffees")
+        .select("*")
+        .ilike("description", `%${descParam}%`);
+      if (error) {
+        console.error(error);
+        return res.status(500).json({ error: "DB error" });
+      }
+      return res.json(data || []);
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: "DB error" });
@@ -148,23 +205,55 @@ app.patch("/coffee/:id", async (req, res) => {
   if (!provided || provided !== API_SECRET)
     return res.status(401).json({ error: "Unauthorized" });
   const param = req.params.id;
-  if (!dbReady)
+  if (!supabaseReady || !supabase)
     return res
       .status(503)
       .json({ error: "Database not configured for write operations" });
   try {
-    let coffee = null;
-    if (/^[0-9a-fA-F]{24}$/.test(param)) coffee = await Coffee.findById(param);
-    if (!coffee) {
-      const n = parseInt(param, 10);
-      if (!isNaN(n)) coffee = await Coffee.findOne({ legacyId: n });
+    const n = parseInt(param, 10);
+    let target = null;
+    if (!isNaN(n)) {
+      const { data, error } = await supabase
+        .from("coffees")
+        .select("*")
+        .eq("id", n)
+        .limit(1)
+        .single();
+      if (error && error.code !== "PGRST116") console.error(error);
+      if (data) target = data;
     }
-    if (!coffee) return res.status(404).json({ error: "Coffee not found" });
+    if (!target) {
+      const { data: byId, error: byIdErr } = await supabase
+        .from("coffees")
+        .select("*")
+        .eq("id", param)
+        .limit(1)
+        .single();
+      if (byIdErr && byIdErr.code !== "PGRST116") console.error(byIdErr);
+      if (byId) target = byId;
+    }
+    if (!target) return res.status(404).json({ error: "Coffee not found" });
+
+    const updates = {};
     const { name, description } = req.body;
-    if (name) coffee.name = name;
-    if (description) coffee.description = description;
-    await coffee.save();
-    res.json(coffee);
+    if (name) updates.name = name;
+    if (description) updates.description = description;
+    if (Object.keys(updates).length === 0)
+      return res.status(400).json({ error: "No updatable fields provided" });
+
+    // perform update
+    let updateQuery = supabase.from("coffees");
+    if (target.id) updateQuery = updateQuery.eq("id", target.id);
+    else if (target.id) updateQuery = updateQuery.eq("id", target.id);
+    const { data: updated, error: updateErr } = await updateQuery
+      .update(updates)
+      .select("*")
+      .single();
+    if (updateErr) {
+      console.error(updateErr);
+      return res.status(500).json({ error: "Failed to update coffee" });
+    }
+    res.json(updated);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to update coffee" });
@@ -178,30 +267,39 @@ app.post("/add-coffee", async (req, res) => {
   const API_SECRET = process.env.API_SECRET;
   if (!provided || provided !== API_SECRET)
     return res.status(401).json({ error: "Unauthorized" });
-  if (!dbReady)
+  if (!supabaseReady || !supabase)
     return res
       .status(503)
       .json({ error: "Database not configured for write operations" });
   const { name, image, description } = req.body;
   if (!name) return res.status(400).json({ error: "Missing 'name'" });
   try {
-    // legacyId is optional — set to max legacyId + 1 if present
-    const maxLegacy = await Coffee.find({ legacyId: { $exists: true } })
-      .sort({ legacyId: -1 })
+    // calculate next id if present
+    const { data: maxRow, error: maxErr } = await supabase
+      .from("coffees")
+      .select("id")
+      .not("id", "is", null)
+      .order("id", { ascending: false })
       .limit(1)
-      .lean();
-    const legacyId =
-      maxLegacy && maxLegacy.length > 0 && maxLegacy[0].legacyId
-        ? maxLegacy[0].legacyId + 1
-        : undefined;
-    const doc = new Coffee({
+      .single();
+    if (maxErr && maxErr.code !== "PGRST116") console.error(maxErr);
+    const id = maxRow && maxRow.id ? maxRow.id + 1 : undefined;
+    const payload = {
       name,
       image: image || "",
       description: description || "",
-      legacyId,
-    });
-    await doc.save();
-    res.status(201).json(doc);
+    };
+    if (id) payload.id = id;
+    const { data, error } = await supabase
+      .from("coffees")
+      .insert([payload])
+      .select("*")
+      .single();
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Failed to save new coffee" });
+    }
+    res.status(201).json(data);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to save new coffee" });
