@@ -5,7 +5,7 @@ const path = require("path");
 const fs = require("fs").promises;
 
 app.use(express.json());
-app.get("/", (req, res) => res.send("Express on Render"));
+app.get("/", (req, res) => res.send("Express on Vercel"));
 
 app.get("/coffees", (req, res) => {
   res.json(coffees);
