@@ -42,6 +42,12 @@ async function saveCoffees() {
 
 // Patch name and/or description for a coffee by id
 app.patch("/coffee/:id", async (req, res) => {
+  const provided =
+    req.header("x-api-secret") || req.body.api_secret || req.query.api_secret;
+  const API_SECRET = process.env.API_SECRET;
+  if (!provided || provided !== API_SECRET)
+    return res.status(401).json({ error: "Unauthorized" });
+
   const id = parseInt(req.params.id, 10);
   const coffee = coffees.find((c) => c.id === id);
   if (!coffee) return res.status(404).json({ error: "Coffee not found" });
@@ -60,7 +66,7 @@ app.patch("/coffee/:id", async (req, res) => {
 app.post("/add-coffee", async (req, res) => {
   const provided =
     req.header("x-api-secret") || req.body.api_secret || req.query.api_secret;
-  const API_SECRET = process.env.API_SECRET || "change-me";
+  const API_SECRET = process.env.API_SECRET;
   if (!provided || provided !== API_SECRET)
     return res.status(401).json({ error: "Unauthorized" });
 
@@ -79,7 +85,7 @@ app.post("/add-coffee", async (req, res) => {
     await saveCoffees();
     res.status(201).json(newCoffee);
   } catch (err) {
-    res.status(500).json({ error: "Failed to save new coffee" });
+    res.status(500).json({ error: "Failed to save new coffee", err: err });
   }
 });
 
