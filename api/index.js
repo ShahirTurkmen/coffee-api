@@ -9,7 +9,7 @@ let coffees = [];
 try {
   coffees = require("./coffees.json");
 } catch (err) {
-  coffees = [];
+  throw new Error("Failed to load coffees.json: " + (err.message || err));
 }
 
 let supabase = null;
