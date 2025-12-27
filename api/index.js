@@ -70,7 +70,6 @@ async function initSupabase() {
   }
 }
 
-initSupabase();
 // Middleware to parse JSON bodies
 
 app.use(express.json());
