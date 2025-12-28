@@ -14,7 +14,7 @@ try {
 
 let supabase = null;
 let supabaseReady = false;
-
+let isSeedCalled = false;
 async function initSupabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_KEY;
@@ -42,28 +42,7 @@ async function initSupabase() {
     console.log("Supabase client initialized");
 
     // seed if empty and local coffees available
-    try {
-      const { data: existing } = await supabase
-        .from("coffees")
-        .select("id")
-        .limit(1);
-      if (
-        (!existing || existing.length === 0) &&
-        Array.isArray(coffees) &&
-        coffees.length > 0
-      ) {
-        const docs = coffees.map((c) => ({
-          name: c.name,
-          image: c.image,
-          description: c.description,
-          id: c.id,
-        }));
-        await supabase.from("coffees").insert(docs);
-        console.log("Seeded supabase 'coffees' table from coffees.json");
-      }
-    } catch (err) {
-      console.warn("Supabase seed check/insert failed:", err.message || err);
-    }
+    await seedIfEmpty();
   } catch (err) {
     console.error("Failed to initialize Supabase:", err);
     supabaseReady = false;
@@ -334,3 +313,29 @@ app.post("/add-coffee", async (req, res) => {
 
 app.use("/images", express.static(path.join(__dirname, "images")));
 app.listen(3000, () => console.log("Server ready on port 3000"));
+async function seedIfEmpty(supabase) {
+  if (isSeedCalled) return;
+  isSeedCalled = true;
+  try {
+    const { data: existing } = await supabase
+      .from("coffees")
+      .select("id")
+      .limit(1);
+    if (
+      (!existing || existing.length === 0) &&
+      Array.isArray(coffees) &&
+      coffees.length > 0
+    ) {
+      const docs = coffees.map((c) => ({
+        name: c.name,
+        image: c.image,
+        description: c.description,
+        id: c.id,
+      }));
+      await supabase.from("coffees").insert(docs);
+      console.log("Seeded supabase 'coffees' table from coffees.json");
+    }
+  } catch (err) {
+    console.warn("Supabase seed check/insert failed:", err.message || err);
+  }
+}
