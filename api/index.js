@@ -314,7 +314,10 @@ app.post("/add-coffee", async (req, res) => {
 app.use("/images", express.static(path.join(__dirname, "images")));
 app.listen(3000, () => console.log("Server ready on port 3000"));
 async function seedIfEmpty(supabase) {
-  if (isSeedCalled) return;
+  if (isSeedCalled) {
+    console.warn("Seed already called, skipping.");
+    return;
+  }
   try {
     const { data: existing } = await supabase
       .from("coffees")
