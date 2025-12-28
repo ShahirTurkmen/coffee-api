@@ -315,7 +315,6 @@ app.use("/images", express.static(path.join(__dirname, "images")));
 app.listen(3000, () => console.log("Server ready on port 3000"));
 async function seedIfEmpty(supabase) {
   if (isSeedCalled) return;
-  isSeedCalled = true;
   try {
     const { data: existing } = await supabase
       .from("coffees")
@@ -334,8 +333,10 @@ async function seedIfEmpty(supabase) {
       }));
       await supabase.from("coffees").insert(docs);
       console.log("Seeded supabase 'coffees' table from coffees.json");
+      isSeedCalled = true;
     }
   } catch (err) {
+    isSeedCalled = false;
     console.warn("Supabase seed check/insert failed:", err.message || err);
   }
 }
