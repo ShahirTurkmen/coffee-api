@@ -28,16 +28,16 @@ async function initSupabase() {
     supabase = createClient(url, key);
     // await new Promise((resolve) => setTimeout(resolve, 1000)); // wait a bit for supabase to be ready
     // quick test to ensure credentials work
-    const { data: test, error: testErr } = await supabase
-      .from("coffees")
-      .select("id")
-      .limit(1);
-    if (testErr && testErr.code === "42P01") {
-      // table doesn't exist
-      console.warn(
-        "Supabase 'coffees' table not found — reads will still fall back to coffees.json until table is created."
-      );
-    }
+    // const { data: test, error: testErr } = await supabase
+    //   .from("coffees")
+    //   .select("id")
+    //   .limit(1);
+    // if (testErr && testErr.code === "42P01") {
+    //   // table doesn't exist
+    //   console.warn(
+    //     "Supabase 'coffees' table not found — reads will still fall back to coffees.json until table is created."
+    //   );
+    // }
     supabaseReady = true;
     console.log("Supabase client initialized");
 
