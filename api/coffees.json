@@ -2,55 +2,55 @@
   {
     "id": 1,
     "name": "Espresso",
-    "image": "/images/Espresso.jpeg",
+    "image": "https://coffee-api-five.vercel.app/images/Espresso.jpeg",
     "description": "A strong and bold coffee served in a small cup."
   },
   {
     "id": 2,
     "name": "Latte",
-    "image": "/images/Latte.jpeg",
+    "image": "https://coffee-api-five.vercel.app/images/Latte.jpeg",
     "description": "Espresso with steamed milk and a light layer of foam."
   },
   {
     "id": 3,
     "name": "Cappuccino",
-    "image": "/images/Cappuccino.jpg",
+    "image": "https://coffee-api-five.vercel.app/images/Cappuccino.jpg",
     "description": "Equal parts espresso, steamed milk, and foam."
   },
   {
     "id": 4,
     "name": "Americano",
-    "image": "/images/Americano.jpeg",
+    "image": "https://coffee-api-five.vercel.app/images/Americano.jpeg",
     "description": "Espresso diluted with hot water for a milder taste."
   },
   {
     "id": 5,
     "name": "Mocha",
-    "image": "/images/Dark-Chocolate-Mocha.jpg",
+    "image": "https://coffee-api-five.vercel.app/images/Dark-Chocolate-Mocha.jpg",
     "description": "A chocolate-flavored variant of a latte."
   },
   {
     "id": 6,
     "name": "Macchiato",
-    "image": "/images/macchiato.jpg",
+    "image": "https://coffee-api-five.vercel.app/images/macchiato.jpg",
     "description": "Espresso with a small amount of foamed milk."
   },
   {
     "id": 7,
     "name": "Flat White",
-    "image": "/images/FlatWhite.jpg",
+    "image": "https://coffee-api-five.vercel.app/images/FlatWhite.jpg",
     "description": "Espresso with microfoam, similar to a latte but stronger."
   },
   {
     "id": 8,
     "name": "Cortado",
-    "image": "/images/Cortado.jpg",
+    "image": "https://coffee-api-five.vercel.app/images/Cortado.jpg",
     "description": "Espresso cut with a small amount of warm milk to reduce acidity."
   },
   {
     "id": 9,
     "name": "Iced Coffee",
-    "image": "/images/iced-coffee.png",
+    "image": "https://coffee-api-five.vercel.app/images/iced-coffee.png",
     "description": "Chilled coffee served over ice, often with milk or sweeteners."
   }
 ]
