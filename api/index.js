@@ -42,7 +42,7 @@ async function initSupabase() {
     console.log("Supabase client initialized");
 
     // seed if empty and local coffees available
-    await seedIfEmpty();
+    await seedIfEmpty(supabase);
   } catch (err) {
     console.error("Failed to initialize Supabase:", err);
     supabaseReady = false;
