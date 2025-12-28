@@ -16,6 +16,7 @@ let supabase = null;
 let supabaseReady = false;
 let isSeedCalled = false;
 async function initSupabase() {
+  if (supabaseReady && supabase) return;
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_KEY;
   if (!url || !key) {
